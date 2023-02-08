@@ -18,8 +18,10 @@ import qualified RIO.Vector.Partial as Vector (head)
 
 import Data.Aeson ((.:), (.:?))
 
-import qualified Data.Aeson       as JSON
-import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
+import qualified Data.Aeson        as JSON
+import qualified Data.Aeson.Types  as JSON (Parser, typeMismatch)
+import qualified Data.Aeson.KeyMap as KeyMap
+import qualified Data.Aeson.Key    as Key
 
 import System.Etc.Internal.Errors
 import System.Etc.Internal.Spec.Types
@@ -108,22 +110,22 @@ instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
           case value of
             JSON.String inputName
               | inputName == "option" -> do
-                forM_ (HashMap.keys object) $ \key ->
-                  when (not (key `elem` cliOptKeys))
+                forM_ (KeyMap.keys object) $ \key ->
+                  when (not (Key.toText key `elem` cliOptKeys))
                     (fail $ "cli option contains invalid key " ++ show key)
 
                 optParseEntryCtor <$> cliOptParser object
 
               | inputName == "argument" -> do
-                forM_ (HashMap.keys object) $ \key ->
-                  when (not (key `elem` cliArgKeys))
+                forM_ (KeyMap.keys object) $ \key ->
+                  when (not (Key.toText key `elem` cliArgKeys))
                     (fail $ "cli option contains invalid key " ++ show key)
 
                 optParseEntryCtor <$> cliArgParser object
 
               | inputName == "switch" -> do
-                forM_ (HashMap.keys object) $ \key ->
-                  when (not (key `elem` cliOptKeys))
+                forM_ (KeyMap.keys object) $ \key ->
+                  when (not (Key.toText key `elem` cliOptKeys))
                     (fail $ "cli option contains invalid key " ++ show key)
 
                 optParseEntryCtor <$> cliSwitchParser object
@@ -221,15 +223,15 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
   parseJSON json  =
     case json of
       JSON.Object object ->
-        case HashMap.lookup "etc/spec" object of
+        case KeyMap.lookup "etc/spec" object of
           -- normal object
           Nothing -> do
             subConfigMap <- foldM
                         (\subConfigMap (key, value) -> do
                             innerValue <- JSON.parseJSON value
-                            return $ HashMap.insert key innerValue subConfigMap)
+                            return $ HashMap.insert (Key.toText key) innerValue subConfigMap)
                         HashMap.empty
-                        (HashMap.toList object)
+                        (KeyMap.toList object)
             if HashMap.null subConfigMap then
               fail "Entries cannot have empty maps as values"
             else
@@ -237,10 +239,10 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
 
           -- etc spec value object
           Just (JSON.Object fieldSpec) ->
-            if HashMap.size object == 1 then do
+            if KeyMap.size object == 1 then do
               -- NOTE: not using .:? here as it casts JSON.Null to Nothing, we
               -- want (Just JSON.Null) returned
-              let mDefaultValue = maybe Nothing Just $ HashMap.lookup "default" fieldSpec
+              let mDefaultValue = maybe Nothing Just $ KeyMap.lookup (Key.fromText "default") fieldSpec
               mSensitive    <- fieldSpec .:? "sensitive"
               mCvType       <- fieldSpec .:? "type"
               let sensitive = fromMaybe False mSensitive

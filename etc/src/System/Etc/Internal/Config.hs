@@ -12,6 +12,8 @@ import qualified RIO.Text    as Text
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
 import qualified Data.Aeson.Types    as JSON (Parser)
+import qualified Data.Aeson.KeyMap   as KeyMap
+import qualified Data.Aeson.Key      as Key
 
 import System.Etc.Internal.Errors
 import System.Etc.Internal.Types
@@ -29,9 +31,9 @@ configValueToJsonObject configValue = case configValue of
     configm
       & HashMap.foldrWithKey
           (\key innerConfigValue acc ->
-            HashMap.insert key (configValueToJsonObject innerConfigValue) acc
+            KeyMap.insert (Key.fromText key) (configValueToJsonObject innerConfigValue) acc
           )
-          HashMap.empty
+          KeyMap.empty
       & JSON.Object
 
 _getConfigValueWith

@@ -17,6 +17,8 @@ import System.Etc.Internal.Spec.YAML (decodeYaml)
 #endif
 
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.KeyMap as KeyMap
+import qualified Data.Aeson.Key    as Key
 -- import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
 import qualified RIO.ByteString.Lazy as LB8
 
@@ -61,7 +63,8 @@ parseConfigValue keys spec fileIndex fileSource json =
               return $ HashMap.insert key value1 acc
           )
           HashMap.empty
-          (HashMap.toList object)
+          (map (\(k,v) -> (Key.toText k, v)) $
+            KeyMap.toList object)
 
         (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected currentKey json
 

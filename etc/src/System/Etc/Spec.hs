@@ -14,8 +14,6 @@ import qualified Data.Text.IO as Text (readFile)
 import           RIO
 import qualified RIO.Text     as Text
 
-import Data.Proxy (Proxy)
-
 import Language.Haskell.TH        (ExpQ)
 import Language.Haskell.TH.Syntax (Lift)
 

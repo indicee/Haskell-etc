@@ -19,6 +19,8 @@ import qualified RIO.Vector        as Vector
 import qualified RIO.Vector.Unsafe as Vector (unsafeHead)
 
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.KeyMap as KeyMap
+import qualified Data.Aeson.Key    as Key
 
 import Text.PrettyPrint.ANSI.Leijen
 
@@ -87,7 +89,8 @@ renderConfigValueJSON value = case value of
       --
       _            -> text (Text.unpack k) <> ":" <+> renderConfigValueJSON v
     )
-    (HashMap.toList obj)
+    (map (\(k,v) -> (Key.toText k, v)) $
+      KeyMap.toList obj)
 
 
 renderConfigValue :: (JSON.Value -> Doc) -> Value JSON.Value -> [Doc]
